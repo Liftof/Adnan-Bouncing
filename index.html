@@ -76,6 +76,93 @@
             }
         }
     </style>
+    <style>
+        .pb-audience-notice {
+            position: fixed;
+            z-index: 1000;
+            inset-inline-end: .75rem;
+            inset-block-end: .75rem;
+            max-inline-size: min(28rem, calc(100vw - 1.5rem));
+            max-block-size: calc(100vh - 1.5rem);
+            overflow: auto;
+            background: #171321;
+            color: #fff;
+            border: 1px solid #80718a;
+            border-radius: .6rem;
+            padding: .55rem .75rem;
+            font: .875rem/1.45 system-ui, sans-serif;
+        }
+
+        .pb-audience-notice summary { cursor: pointer; overflow: visible; }
+        .pb-audience-notice p { margin-block-start: .65rem; }
+        .pb-audience-notice a { color: #dbc3ff; text-decoration: underline; }
+        .pb-audience-notice :focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    </style>
+    <script data-pb-audience-install>
+(function () {
+  const config = {"site":"adnan-bouncing","page":"home","origin":"https://adnan-bouncing.vercel.app","path":"/","endpoint":"https://pb-audience.vercel.app/api/collect"};
+  if (window !== window.top || location.origin !== config.origin || location.pathname !== config.path) return;
+
+  const params = new URLSearchParams(location.search);
+  const key = 'pb-audience-optout';
+  const urlOff = params.get('audience') === 'off';
+  try {
+    if (urlOff) localStorage.setItem(key, '1');
+    if (localStorage.getItem(key) === '1') globalThis.pbAudienceDisabled = true;
+  } catch {
+    globalThis.pbAudienceDisabled = true;
+  }
+  if (urlOff) globalThis.pbAudienceDisabled = true;
+
+  const privacySignal = navigator.globalPrivacyControl || navigator.doNotTrack === '1' || window.doNotTrack === '1';
+
+  function bindNotice() {
+    const notice = document.getElementById('mesure-audience');
+    const link = document.getElementById('audience-opt-out');
+    const status = document.getElementById('audience-status');
+    if (!notice || !link || !status) return;
+
+    function renderRefusal() {
+      if (globalThis.pbAudienceDisabled || privacySignal) status.textContent = 'Mesure désactivée.';
+    }
+
+    if (location.hash === '#mesure-audience') notice.open = true;
+    notice.addEventListener('click', event => event.stopPropagation());
+    renderRefusal();
+    link.addEventListener('click', event => {
+      globalThis.pbAudienceDisabled = true;
+      try {
+        localStorage.setItem(key, '1');
+        if (localStorage.getItem(key) === '1') {
+          event.preventDefault();
+          renderRefusal();
+        }
+      } catch {
+        // The link still opens a page with measurement disabled.
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindNotice, { once: true });
+  } else {
+    bindNotice();
+  }
+
+  if (globalThis.pbAudienceDisabled || privacySignal || params.has('embed')) return;
+  const counter = document.createElement('script');
+  counter.src = '/audience-v1.js';
+  counter.async = true;
+  counter.fetchPriority = 'low';
+  Object.assign(counter.dataset, {
+    site: config.site,
+    page: config.page,
+    path: config.path,
+    endpoint: config.endpoint,
+  });
+  document.head.appendChild(counter);
+})();
+    </script>
 </head>
 <body>
     <img id="adnan" src="adnan spinning bg transparent.png" alt="Spinning Adnan">
@@ -287,5 +374,12 @@
         // Démarrer l'animation
         animate();
     </script>
+    <details id="mesure-audience" class="pb-audience-notice">
+        <summary>Confidentialité</summary>
+        <p>Ce site compte les vues de cette page publique pour connaître sa fréquentation. Le compteur reçoit une clé de site et une catégorie de page prédéfinie. Le tableau présente les totaux quotidiens sur une fenêtre de 90 jours.</p>
+        <p>Vercel traite les métadonnées nécessaires à la requête. Votre navigateur peut mémoriser uniquement votre choix de refus. La mesure fonctionne sans cookie de suivi ni identifiant de navigation.</p>
+        <p><a id="audience-opt-out" href="/?audience=off#mesure-audience">Refuser la mesure</a> <span id="audience-status" role="status"></span></p>
+        <p><a href="https://pierrebaptiste.me/about/">Contacter l’éditeur</a></p>
+    </details>
 </body>
 </html>
